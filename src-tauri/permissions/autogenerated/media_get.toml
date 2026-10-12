@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-media-get"
+description = "Enables the media_get command without any pre-configured scope."
+commands.allow = ["media_get"]
+
+[[permission]]
+identifier = "deny-media-get"
+description = "Denies the media_get command without any pre-configured scope."
+commands.deny = ["media_get"]

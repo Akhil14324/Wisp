@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-todos-update"
+description = "Enables the todos_update command without any pre-configured scope."
+commands.allow = ["todos_update"]
+
+[[permission]]
+identifier = "deny-todos-update"
+description = "Denies the todos_update command without any pre-configured scope."
+commands.deny = ["todos_update"]

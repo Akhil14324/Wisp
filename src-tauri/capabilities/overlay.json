@@ -1,0 +1,12 @@
+{
+    "permissions":  [
+                        "core:event:default",
+                        "allow-overlay-submit"
+                    ],
+    "description":  "Circle to Ask drawing and target rings",
+    "$schema":  "../gen/schemas/desktop-schema.json",
+    "identifier":  "overlay",
+    "windows":  [
+                    "overlay"
+                ]
+}

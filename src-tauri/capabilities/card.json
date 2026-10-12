@@ -1,0 +1,15 @@
+{
+    "permissions":  [
+                        "core:event:default",
+                        "allow-cta-ask",
+                        "allow-cta-close",
+                        "allow-card-resize",
+                        "allow-presets-list"
+                    ],
+    "description":  "Circle to Ask answer card",
+    "$schema":  "../gen/schemas/desktop-schema.json",
+    "identifier":  "card",
+    "windows":  [
+                    "card"
+                ]
+}

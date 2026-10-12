@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-cta-ask"
+description = "Enables the cta_ask command without any pre-configured scope."
+commands.allow = ["cta_ask"]
+
+[[permission]]
+identifier = "deny-cta-ask"
+description = "Denies the cta_ask command without any pre-configured scope."
+commands.deny = ["cta_ask"]

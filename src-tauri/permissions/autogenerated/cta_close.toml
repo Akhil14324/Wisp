@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-cta-close"
+description = "Enables the cta_close command without any pre-configured scope."
+commands.allow = ["cta_close"]
+
+[[permission]]
+identifier = "deny-cta-close"
+description = "Denies the cta_close command without any pre-configured scope."
+commands.deny = ["cta_close"]

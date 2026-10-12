@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-volume-get"
+description = "Enables the volume_get command without any pre-configured scope."
+commands.allow = ["volume_get"]
+
+[[permission]]
+identifier = "deny-volume-get"
+description = "Denies the volume_get command without any pre-configured scope."
+commands.deny = ["volume_get"]

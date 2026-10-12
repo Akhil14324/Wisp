@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci",
+  "buildCommand": "npx vite build",
+  "outputDirectory": "dist",
+  "rewrites": [{ "source": "/", "destination": "/src/main/index.html" }]
+}

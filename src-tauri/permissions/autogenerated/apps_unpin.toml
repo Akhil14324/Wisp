@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-apps-unpin"
+description = "Enables the apps_unpin command without any pre-configured scope."
+commands.allow = ["apps_unpin"]
+
+[[permission]]
+identifier = "deny-apps-unpin"
+description = "Denies the apps_unpin command without any pre-configured scope."
+commands.deny = ["apps_unpin"]

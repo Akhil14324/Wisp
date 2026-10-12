@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-apps-pin"
+description = "Enables the apps_pin command without any pre-configured scope."
+commands.allow = ["apps_pin"]
+
+[[permission]]
+identifier = "deny-apps-pin"
+description = "Denies the apps_pin command without any pre-configured scope."
+commands.deny = ["apps_pin"]

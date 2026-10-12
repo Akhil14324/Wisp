@@ -1,0 +1,100 @@
+[package]
+name = "wisp"
+version = "0.1.0"
+description = "Wisp: a voice assistant for Windows 11 powered by Gemini"
+authors = ["Akhil"]
+edition = "2021"
+publish = false
+
+[lib]
+# The `_lib` suffix avoids a name clash between the lib and bin on Windows.
+name = "wisp_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-single-instance = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-opener = "2"
+
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time"] }
+tokio-util = "0.7"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+thiserror = "2"
+tracing = "0.1"
+tracing-appender = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+
+rusqlite = { version = "0.40", features = ["bundled"] }
+refinery = { version = "0.10", default-features = false, features = ["rusqlite"] }
+keyring = { version = "3", features = ["windows-native"] }
+croner = "3"
+chrono = { version = "0.4", features = ["serde"] }
+chrono-tz = "0.10"
+iana-time-zone = "0.1"
+
+cpal = "0.16"
+rubato = "0.16"
+xcap = "0.7"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+base64 = "0.22"
+rand = "0.9"
+sha2 = "0.10"
+
+[target.'cfg(windows)'.dependencies]
+tauri-winrt-notification = "0.7"
+windows = { version = "0.61", features = [
+  "Win32_Foundation",
+  "Win32_Graphics_Gdi",
+  "Win32_Graphics_Dwm",
+  "Win32_System_LibraryLoader",
+  "Win32_System_Threading",
+  "Win32_System_SystemInformation",
+  "Win32_System_SystemServices",
+  "Win32_System_DataExchange",
+  "Win32_System_Memory",
+  "Win32_System_Ole",
+  "Win32_System_Com",
+  "Win32_System_Com_StructuredStorage",
+  "Win32_System_Variant",
+  "Win32_System_Power",
+  "Win32_System_RemoteDesktop",
+  "Win32_System_ProcessStatus",
+  "Win32_Security",
+  "Win32_UI_WindowsAndMessaging",
+  "Win32_UI_Input_KeyboardAndMouse",
+  "Win32_UI_Shell",
+  "Win32_UI_HiDpi",
+  "Win32_Media_Audio",
+  "Win32_Media_Audio_Endpoints",
+  "Foundation",
+  "Media_Control",
+  "Storage_Streams",
+] }
+
+[dev-dependencies]
+wiremock = "0.6"
+tokio-test = "0.4"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "test-util"] }
+
+# Small debug info keeps target/ a few GB smaller; backtraces still have line numbers.
+[profile.dev]
+debug = "line-tables-only"
+incremental = false
+
+[profile.dev.package."*"]
+debug = false
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+strip = true

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-todos-create"
+description = "Enables the todos_create command without any pre-configured scope."
+commands.allow = ["todos_create"]
+
+[[permission]]
+identifier = "deny-todos-create"
+description = "Denies the todos_create command without any pre-configured scope."
+commands.deny = ["todos_create"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-card-resize"
+description = "Enables the card_resize command without any pre-configured scope."
+commands.allow = ["card_resize"]
+
+[[permission]]
+identifier = "deny-card-resize"
+description = "Denies the card_resize command without any pre-configured scope."
+commands.deny = ["card_resize"]

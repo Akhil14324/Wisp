@@ -1,0 +1,38 @@
+{
+    "permissions":  [
+                        "core:event:default",
+                        "allow-app-status",
+                        "allow-settings-get",
+                        "allow-settings-set",
+                        "allow-presets-list",
+                        "allow-presets-activate",
+                        "allow-island-layout",
+                        "allow-island-set-interactive",
+                        "allow-run-text-command",
+                        "allow-agent-stop",
+                        "allow-agent-resume",
+                        "allow-confirm-answer",
+                        "allow-media-get",
+                        "allow-media-control",
+                        "allow-volume-get",
+                        "allow-volume-set-mute",
+                        "allow-todos-list",
+                        "allow-todos-update",
+                        "allow-jobs-list",
+                        "allow-apps-pinned",
+                        "allow-launch-app",
+                        "allow-wallpaper-list",
+                        "allow-wallpaper-set",
+                        "allow-clipboard-history-list",
+                        "allow-clipboard-history-paste",
+                        "allow-mic-devices-list",
+                        "allow-hotkeys-set-paused",
+                        "allow-window-show-main"
+                    ],
+    "description":  "Island pill and panels",
+    "$schema":  "../gen/schemas/desktop-schema.json",
+    "identifier":  "island",
+    "windows":  [
+                    "island"
+                ]
+}
