@@ -93,17 +93,40 @@ pub fn secrets_status() -> UiResult<KeyStatus> {
     })
 }
 
+/// Light sanity check only; Google decides whether the key is valid.
+/// Drops whitespace and surrounding quotes that often come along with a copy.
 fn clean_key(raw: &str) -> UiResult<ApiKey> {
-    let k = raw.trim();
-    if k.len() < 20
-        || k.len() > 200
-        || !k
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
-    {
-        return Err(UiError::invalid("That does not look like a Gemini API key"));
+    let k: String = raw.chars().filter(|c| !c.is_whitespace()).collect();
+    let k = k.trim_matches(|c| c == '"' || c == '\'' || c == '`');
+    if k.len() < 10 || k.len() > 512 || !k.chars().all(|c| c.is_ascii_graphic()) {
+        return Err(UiError::invalid(
+            "That does not look like an API key. Copy it again from Google AI Studio.",
+        ));
     }
     Ok(ApiKey::new(k))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::clean_key;
+
+    #[test]
+    fn key_cleaning() {
+        assert_eq!(
+            clean_key("  AIzaSyABC123-_xyz789qwe \n").unwrap().expose(),
+            "AIzaSyABC123-_xyz789qwe"
+        );
+        assert_eq!(
+            clean_key("\"AQ.Ab8RN6abc.def-123\"").unwrap().expose(),
+            "AQ.Ab8RN6abc.def-123"
+        );
+        assert_eq!(
+            clean_key("AIzaSy\r\nABC123xyz789").unwrap().expose(),
+            "AIzaSyABC123xyz789"
+        );
+        assert!(clean_key("short").is_err());
+        assert!(clean_key("ключключключключ").is_err());
+    }
 }
 
 #[tauri::command]
