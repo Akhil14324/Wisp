@@ -1,0 +1,156 @@
+/* Island: quiet dark glass (section 8.3). Always dark, whatever the main theme. */
+html,
+body,
+#root {
+  background: transparent !important;
+  height: 100%;
+}
+
+.island {
+  --glass: rgba(16, 16, 20, var(--island-opacity));
+  color: #ececf1;
+  font-size: var(--island-font);
+  user-select: none;
+  cursor: default;
+}
+
+.island-shell {
+  background: var(--glass);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px) saturate(140%);
+  transition:
+    border-radius 160ms ease-out,
+    background 160ms ease-out;
+}
+
+.island-pill {
+  border-radius: 999px;
+}
+
+/* WebView2 cannot blur the desktop behind a transparent window, so panels and
+   cards stay nearly opaque to keep text readable over busy backgrounds. */
+.island-panel {
+  border-radius: 18px;
+  background: rgba(16, 16, 20, 0.96);
+}
+
+.island .muted {
+  color: #a0a0ae;
+}
+
+.island button:focus-visible,
+.island input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.island-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(236, 236, 241, 0.55);
+}
+
+.island-dot.thinking {
+  background: var(--accent);
+  animation: wisp-pulse 1.1s ease-in-out infinite;
+}
+
+.island-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--accent);
+  animation: wisp-spin 0.8s linear infinite;
+}
+
+.island-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: height 60ms linear;
+}
+
+.island-enter {
+  animation: wisp-fade-in 160ms ease-out;
+}
+
+.island-tab {
+  padding: 4px 8px;
+  border-radius: 8px;
+  color: #a0a0ae;
+  white-space: nowrap;
+}
+.island-tab[aria-selected="true"] {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.island-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ececf1;
+  transition: background 120ms ease-out;
+}
+.island-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+.island-btn.primary {
+  background: var(--accent);
+  color: #0b0b10;
+  font-weight: 600;
+}
+.island-btn.danger {
+  background: rgba(255, 107, 112, 0.16);
+  color: #ff8a8e;
+}
+
+.island-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  color: #ececf1;
+}
+.island-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.island-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.island-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+.island-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.island select,
+.island input[type="text"] {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ececf1;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  height: 28px;
+  padding: 0 8px;
+  outline: none;
+}
+.island select option {
+  background: #1a1a20;
+}
