@@ -1,0 +1,27 @@
+# Deviations from the SRS
+
+Per section 10.6: where a requirement could not be met exactly as written, the closest safe behaviour was built and recorded here.
+
+| Req | What the SRS says | What Wisp does | Why |
+|---|---|---|---|
+| FR-GEM-01, 5.7 | REST generateContent for dictation, commands and Circle to Ask | As written. **Computer Use** uses the **Interactions API** (`POST /v1beta/interactions`) with `previous_interaction_id`. | The official Computer Use page (read 2026-10-12) documents only the Interactions API. Stateful chaining means Google keeps each interaction for 1 day on the free tier (55 days on paid), per the Interactions docs. All the wire format is isolated in `gemini/computer_use.rs`. |
+| 5.7.1, FR-CU-07 | Send the safety acknowledgement as the docs say | `"safety_acknowledgement": true` goes inside the function result's JSON text part, as in the docs sample. | The docs show no separate top-level field. Check this against the live API on first use. |
+| 5.7.3 | Screenshots at native resolution | PNG at native resolution; if over 3 MB, JPEG 85, shrinking until it fits. | Keeps every request under the 10 MB cap (FR-GEM-04). Coordinates are normalized 0-999, so scaling does not change them. |
+| 5.6, M8 | Optional Live mode | Not built; `gemini::live::AVAILABLE = false`. `tokio-tungstenite` is not a dependency. | M8 starts only after M7 passes on your PC. |
+| 3.1 | React 18 + Vite, `tailwind.config.ts` | React 18.3, Vite 6, Tailwind CSS v4 through `@tailwindcss/vite`. | Tailwind v4 needs no config file. Major versions are pinned with `^`. |
+| 3.3 | Three window kinds | Four: `island`, `overlay`, `card` (the result card in 8.1), `main`. Each has its own Vite entry. | The answer card needs focus and its own capability set. |
+| 3.3 | Overlay created only when needed, destroyed after use | Created hidden at startup, shown and moved when needed, hidden after. | Creating a WebView takes 200-500 ms, so strokes drawn right after the chord would be lost. |
+| Appendix B, NFR-12 | Front end may call only the listed commands | Extra UI helpers: `app_status`, `apps_pinned`, `media_get`, `volume_get`, `volume_set_mute`, `wallpaper_pick_folder`, `hotkeys_set_paused`, `open_external` (fixed targets only), `island_layout`, `island_set_interactive`, `overlay_submit`, `card_resize`, `cta_ask`, `cta_close`, `quit_app`. | Needed for the island, overlay and card. Every command is still gated by a per-window capability file, and none of them can be reached by a model tool. |
+| FR-HK-03 | Inject 0xE8 before the Win release reaches the system | The hook swallows the physical Win release, then injects 0xE8 down/up followed by a Win up, all marked. | Guarantees the order. Injecting from inside the callback without swallowing does not guarantee that the mask key lands first. |
+| 7.1 | Swallow Space of Ctrl+Alt+Space while Active | Space is swallowed from Arming onward (the 120 ms before Active). | Otherwise a space would be typed into the focused app during arming. |
+| 7.6 | Store apps through the shell COM interfaces | Store apps come from `powershell -NoProfile -Command Get-StartApps`, run by Wisp itself. | This is the fallback the SRS allows. The model cannot trigger it. |
+| FR-CMD-09 | History shows the transcript | Voice commands show "(voice command)" plus the tools called with arguments, the outcome and the duration. Typed commands and jobs show the text. | The command request sends audio only, so no transcript comes back. Getting one would cost a second request per command on the free tier. |
+| FR-DIC-07 | If the paste fails or the target blocks it, type instead | Wisp falls back to typing when SendInput is rejected or the clipboard cannot be written. | An app that silently ignores Ctrl+V cannot be detected from outside. |
+| 7.5 | Any non-text format means typing | Text formats are CF_TEXT, CF_OEMTEXT, CF_UNICODETEXT, CF_LOCALE and the clipboard-history marker formats. Anything else (HTML, images, files) means typing. | Restoring only the text would drop rich formatting, so typing is used to keep the clipboard intact. |
+| FR-TODO-03 | Notification with Done and Snooze 10 min | Toasts come from `tauri-winrt-notification` directly. The notification plugin is still registered. | The plugin cannot add action buttons on Windows desktop. |
+| 7.8 | Autostart via plugin | As written. The autostart entry passes `--autostart`. | n/a |
+| NFR-11 | CSP `default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'` | Same, plus `connect-src ipc: http://ipc.localhost`. | Tauri's IPC transport needs it. No remote origins are allowed. |
+| FR-ISL-09 | User picks a folder | The folder path is typed in Settings > General. | Keeps to the plugin list in 3.2 (no dialog or filesystem plugin). |
+| FR-ISL-01, FR-CMD-04, 8.5 | Island never takes focus | The island takes focus only while the typed command box or a confirmation card is open, then hands focus back to the previous window. | Typing and "Esc means No" need keyboard focus. |
+| FR-SCH-04 | Sleep until the earliest job | The scheduler sleeps until the earliest due time, but wakes at least every 60 s. | Handles clock changes and resume from sleep without extra hooks. |
+| 2.3.4 | Agent cannot run the app | The app was built on your Windows PC, so `cargo test`, `npm test`, lint and typecheck ran locally. | Hardware-dependent checks are still in `docs/manual-tests/`. |
