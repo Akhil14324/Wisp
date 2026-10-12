@@ -40,7 +40,12 @@ pub fn defaults() -> Value {
         "max_minutes": 10
       },
       "app": { "autostart": true, "first_run_done": false, "privacy_ack_at": null },
-      "wallpaper": { "folder": null }
+      "wallpaper": { "folder": null },
+      "taskhub": {
+        "url": "https://vgrand-taskhub-backend-production.up.railway.app/api",
+        "username": null,
+        "user_id": null
+      }
     })
 }
 
@@ -72,10 +77,18 @@ pub const KEYS: &[&str] = &[
     "app.first_run_done",
     "app.privacy_ack_at",
     "wallpaper.folder",
+    "taskhub.url",
+    "taskhub.username",
+    "taskhub.user_id",
 ];
 
 /// Keys only the main window may change (NFR-16, Appendix B).
-pub const MAIN_ONLY_KEYS: &[&str] = &["agent.guard_list"];
+pub const MAIN_ONLY_KEYS: &[&str] = &[
+    "agent.guard_list",
+    "taskhub.url",
+    "taskhub.username",
+    "taskhub.user_id",
+];
 
 /// Allowed hotkey chords (FR-HK-06).
 pub const ALLOWED_CHORDS: &[&str] = &[
@@ -115,6 +128,15 @@ pub struct Settings {
     pub agent: AgentCfg,
     pub app: AppCfg,
     pub wallpaper: WallpaperCfg,
+    pub taskhub: TaskHubCfg,
+}
+
+/// TaskHub sign-in (the password and token live in Credential Manager).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskHubCfg {
+    pub url: String,
+    pub username: Option<String>,
+    pub user_id: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -276,6 +298,17 @@ pub fn validate(key: &str, value: &Value) -> UiResult<()> {
                     .unwrap_or(true)
             }) {
                 return bad("Each dictionary term must be 1 to 64 characters");
+            }
+        }
+        "taskhub.url" => {
+            let s = value.as_str().unwrap_or_default();
+            let ok = (s.starts_with("https://")
+                || s.starts_with("http://localhost")
+                || s.starts_with("http://127.0.0.1"))
+                && s.len() <= 300
+                && !s.contains(char::is_whitespace);
+            if !ok {
+                return bad("The TaskHub address must start with https://");
             }
         }
         k if k.starts_with("models.") && k != "models.live" => {

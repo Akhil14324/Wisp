@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 
 export type Topic =
   | "island-state"
+  | "island-hover"
   | "audio-level"
   | "confirm-request"
   | "confirm-closed"

@@ -150,6 +150,12 @@ fn tool(model: &str) -> Value {
     }])
 }
 
+/// "low" thinking keeps each step quick; every documented Computer Use model
+/// supports it (gemini-3.8-flash has no "minimal").
+fn generation_config() -> Value {
+    json!({ "thinking_level": "low" })
+}
+
 fn image_content(mime: &str, bytes: &[u8]) -> Value {
     json!({ "type": "image", "mime_type": mime, "data": base64::engine::general_purpose::STANDARD.encode(bytes) })
 }
@@ -160,6 +166,7 @@ pub fn first_request(model: &str, goal: &str, mime: &str, screenshot: &[u8]) -> 
         "model": model,
         "system_instruction": prompts::COMPUTER_USE,
         "tools": tool(model),
+        "generation_config": generation_config(),
         "input": [
             { "type": "text", "text": goal },
             image_content(mime, screenshot)
@@ -207,6 +214,7 @@ pub fn next_request(
         "previous_interaction_id": previous_id,
         "system_instruction": prompts::COMPUTER_USE,
         "tools": tool(model),
+        "generation_config": generation_config(),
         "input": input
     })
 }

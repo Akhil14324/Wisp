@@ -21,6 +21,8 @@ pub mod secrets;
 pub mod state;
 pub mod store;
 pub mod sysevents;
+pub mod taskhub;
+pub mod todolist;
 pub mod tools;
 pub mod voice;
 pub mod winutil;
@@ -188,6 +190,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         agent: agent::AgentControl::default(),
         scheduler: scheduler::Scheduler::default(),
         cta: cta::CtaState::default(),
+        taskhub: taskhub::TaskHub::default(),
         session_locked: AtomicBool::new(false),
         models_cache: Mutex::new(None),
         recording_for: Mutex::new(None),
@@ -232,6 +235,27 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 
     c.scheduler.start();
 
+    // TaskHub changes made elsewhere (phone, web) show up within ~2 minutes.
+    tauri::async_runtime::spawn(async {
+        let mut last: Option<String> = None;
+        loop {
+            tokio::time::sleep(Duration::from_secs(120)).await;
+            if !taskhub::signed_in() {
+                continue;
+            }
+            if let Ok(list) = todolist::refresh().await {
+                let sig = serde_json::to_string(&list).unwrap_or_default();
+                if last.as_ref() != Some(&sig) {
+                    if last.is_some() {
+                        ctx().emit("todos-changed", serde_json::json!({}));
+                        ctx().scheduler.wake();
+                    }
+                    last = Some(sig);
+                }
+            }
+        }
+    });
+
     media::watch(|| {
         let info = media::current();
         ctx().emit("media-changed", info);
@@ -263,6 +287,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 
     c.island.place(&settings.island.monitor);
     c.island.show();
+    island::start_hit_test(handle.clone());
 
     // Autostart default on (FR-SET-08).
     let al = handle.autolaunch();
@@ -321,6 +346,9 @@ pub fn run() {
             commands::todos_delete,
             commands::todos_reorder,
             commands::todo_snooze,
+            commands::taskhub_status,
+            commands::taskhub_sign_in,
+            commands::taskhub_sign_out,
             commands::jobs_list,
             commands::jobs_create,
             commands::jobs_update,

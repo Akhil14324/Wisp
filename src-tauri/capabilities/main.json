@@ -57,7 +57,10 @@
                         "allow-diagnostics-copy",
                         "allow-hotkeys-set-paused",
                         "allow-open-external",
-                        "allow-quit-app"
+                        "allow-quit-app",
+                        "allow-taskhub-status",
+                        "allow-taskhub-sign-in",
+                        "allow-taskhub-sign-out"
                     ],
     "description":  "Main window: settings, history, to-do, routines",
     "$schema":  "../gen/schemas/desktop-schema.json",

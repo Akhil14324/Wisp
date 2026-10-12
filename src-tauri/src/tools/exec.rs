@@ -68,8 +68,24 @@ impl SystemTools {
                 match c.apps.resolve(&name) {
                     Resolution::Launch(app) => {
                         let label = app.name.clone();
-                        blocking(move || crate::apps::launch(&app)).await?;
-                        Ok(json!({ "launched": label }))
+                        let focused = blocking(move || {
+                            let before = crate::winutil::foreground().hwnd;
+                            crate::apps::launch(&app)?;
+                            // Wait for the new window so a following press_keys
+                            // or type_text lands in it, not in the old app.
+                            let until = std::time::Instant::now() + Duration::from_secs(4);
+                            while std::time::Instant::now() < until {
+                                let fg = crate::winutil::foreground();
+                                if fg.hwnd != 0 && fg.hwnd != before && !fg.is_wisp {
+                                    std::thread::sleep(Duration::from_millis(250));
+                                    return Ok(true);
+                                }
+                                std::thread::sleep(Duration::from_millis(100));
+                            }
+                            Ok(false)
+                        })
+                        .await?;
+                        Ok(json!({ "launched": label, "window_in_front": focused }))
                     }
                     Resolution::Choose(opts) => {
                         let names: Vec<String> = opts.iter().map(|o| o.name.clone()).collect();
@@ -168,18 +184,17 @@ impl SystemTools {
                     Some(d) => Some(parse_due(d, chrono::Local::now())?),
                     None => None,
                 };
-                let t = todos::create(
-                    &c.db,
-                    &todos::NewTodo {
-                        title,
-                        notes: None,
-                        due_at: due,
-                    },
-                )
-                .map_err(|e| e.to_string())?;
+                // Goes to TaskHub when signed in, else the local list.
+                let t = crate::todolist::create(&todos::NewTodo {
+                    title,
+                    notes: None,
+                    due_at: due,
+                })
+                .await
+                .map_err(|e| e.message)?;
                 c.emit("todos-changed", json!({}));
                 c.scheduler.wake();
-                Ok(json!({ "created": t.title, "due_at": t.due_at }))
+                Ok(json!({ "created": t.title, "due_at": t.due_at, "list": t.source }))
             }
             ToolName::CreateSchedule | ToolName::CreateRoutine => {
                 let command = str_arg(args, "command", MAX_ARG)?.trim().to_string();

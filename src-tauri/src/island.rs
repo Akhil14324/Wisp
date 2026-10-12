@@ -15,8 +15,8 @@ use crate::winutil;
 
 pub const LABEL: &str = "island";
 pub const PILL: (f64, f64) = (140.0, 34.0);
-const MAX_W: f64 = 460.0;
-const MAX_H: f64 = 420.0;
+/// Fixed island window size (logical px): room for the largest panel or card.
+pub const WINDOW: (f64, f64) = (460.0, 440.0);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -167,35 +167,93 @@ impl Island {
         }
     }
 
-    /// Resizes the island and keeps it at top-centre of its monitor.
-    pub fn layout(&self, w: f64, h: f64, monitor_setting: &str) {
-        let w = w.clamp(PILL.0 - 40.0, MAX_W);
-        let h = h.clamp(28.0, MAX_H);
+    /// Records the visible shape (logical px). The window itself keeps a fixed
+    /// size so the UI can animate the shape smoothly; only the shape takes the
+    /// mouse (FR-ISL-04, see `start_hit_test`).
+    pub fn layout(&self, w: f64, h: f64) {
+        let w = w.clamp(40.0, WINDOW.0);
+        let h = h.clamp(20.0, WINDOW.1);
         *self.size.lock().unwrap_or_else(|p| p.into_inner()) = (w, h);
-        self.place(monitor_setting);
     }
 
+    /// Visible shape size in logical px.
+    pub fn shape(&self) -> (f64, f64) {
+        *self.size.lock().unwrap_or_else(|p| p.into_inner())
+    }
+
+    /// Keeps the island window at top-centre of its monitor, 8 px down.
     pub fn place(&self, monitor_setting: &str) {
         let Some(win) = self.window() else { return };
         let Some(m) = capture::monitor_for_setting(monitor_setting) else {
             return;
         };
-        let (w, h) = *self.size.lock().unwrap_or_else(|p| p.into_inner());
         let scale = m.scale.max(0.5) as f64;
-        let pw = (w * scale).round() as i32;
+        let pw = (WINDOW.0 * scale).round() as i32;
         let x = m.x + (m.width as i32 - pw) / 2;
         let y = m.y + (8.0 * scale).round() as i32;
         let _ = win.set_position(PhysicalPosition::new(x, y));
-        let _ = win.set_size(LogicalSize::new(w, h));
+        let _ = win.set_size(LogicalSize::new(WINDOW.0, WINDOW.1));
+        let _ = win.set_position(PhysicalPosition::new(x, y));
     }
 }
 
+/// While the typed box or a confirmation card is open, the whole shape must
+/// keep the mouse even if the pointer strays.
+static FORCE_HIT: AtomicBool = AtomicBool::new(false);
+
+/// True when a physical point is inside the visible shape. The shape is
+/// centred horizontally at the top of the window.
+pub fn shape_contains(win: (i32, i32, i32), shape: (f64, f64), pt: (i32, i32)) -> bool {
+    let (wx, wy, width_px) = win;
+    let scale = width_px as f64 / WINDOW.0;
+    let sw = shape.0 * scale;
+    let sh = shape.1 * scale;
+    let x0 = wx as f64 + (width_px as f64 - sw) / 2.0 - 2.0;
+    let y0 = wy as f64 - 2.0;
+    let (px, py) = (pt.0 as f64, pt.1 as f64);
+    px >= x0 && px <= x0 + sw + 4.0 && py >= y0 && py <= y0 + sh + 4.0
+}
+
+/// Polls the cursor (~30 Hz) and makes the transparent part of the island
+/// window click-through, so only the pill or panel takes the mouse.
+pub fn start_hit_test(app: AppHandle) {
+    std::thread::Builder::new()
+        .name("wisp-island-hit".into())
+        .spawn(move || {
+            let mut inside_prev: Option<bool> = None;
+            loop {
+                std::thread::sleep(Duration::from_millis(33));
+                let Some(c) = crate::state::try_ctx() else {
+                    continue;
+                };
+                let Some(win) = app.get_webview_window(LABEL) else {
+                    continue;
+                };
+                let Ok(h) = win.hwnd() else { continue };
+                let Some(rect) = winutil::window_rect(h.0 as isize) else {
+                    continue;
+                };
+                let pt = capture::cursor_pos();
+                let inside = FORCE_HIT.load(Ordering::SeqCst)
+                    || shape_contains((rect.0, rect.1, rect.2 - rect.0), c.island.shape(), pt);
+                if inside_prev != Some(inside) {
+                    let _ = win.set_ignore_cursor_events(!inside);
+                    let _ = app.emit(
+                        "wisp://island-hover",
+                        serde_json::json!({ "inside": inside }),
+                    );
+                    inside_prev = Some(inside);
+                }
+            }
+        })
+        .expect("spawn island hit test");
+}
 /// Creates the island window (hidden until placed).
 pub fn create(app: &AppHandle) -> tauri::Result<()> {
     let win =
         WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("src/island/index.html".into()))
             .title("Wisp")
-            .inner_size(PILL.0, PILL.1)
+            .inner_size(WINDOW.0, WINDOW.1)
             .transparent(true)
             .decorations(false)
             .shadow(false)
@@ -222,7 +280,9 @@ pub fn set_interactive(app: &AppHandle, on: bool) {
     };
     let Ok(h) = w.hwnd() else { return };
     let me = h.0 as isize;
+    FORCE_HIT.store(on, Ordering::SeqCst);
     if on {
+        let _ = w.set_ignore_cursor_events(false);
         let fg = winutil::foreground();
         if fg.hwnd != 0 && fg.hwnd != me {
             *PREV_FOREGROUND.lock().unwrap_or_else(|p| p.into_inner()) = Some(fg.hwnd);
@@ -239,5 +299,25 @@ pub fn set_interactive(app: &AppHandle, on: bool) {
         {
             winutil::focus(prev);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hit_test_follows_centred_shape() {
+        // 460 logical px window at 150% = 690 px wide, at x=615, y=12.
+        let win = (615, 12, 690);
+        let pill = (140.0, 34.0);
+        // Centre of the pill.
+        assert!(shape_contains(win, pill, (615 + 345, 12 + 25)));
+        // Same height but far to the left: transparent area, click-through.
+        assert!(!shape_contains(win, pill, (630, 30)));
+        // Below the pill.
+        assert!(!shape_contains(win, pill, (960, 12 + 120)));
+        // The expanded panel covers that point.
+        assert!(shape_contains(win, (420.0, 300.0), (960, 12 + 120)));
     }
 }

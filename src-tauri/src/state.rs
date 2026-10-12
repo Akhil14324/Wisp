@@ -29,6 +29,7 @@ pub struct AppState {
     pub agent: AgentControl,
     pub scheduler: Scheduler,
     pub cta: CtaState,
+    pub taskhub: crate::taskhub::TaskHub,
     pub session_locked: AtomicBool,
     pub models_cache: Mutex<Option<Vec<ModelInfo>>>,
     /// Which chord is currently recording, so ChordUp matches ChordDown.

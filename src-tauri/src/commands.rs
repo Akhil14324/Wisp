@@ -367,10 +367,11 @@ pub fn presets_import(text: String) -> UiResult<presets::Preset> {
 }
 
 // ---------- To-do ----------
+// Backed by TaskHub when signed in, else the local list (crate::todolist).
 
 #[tauri::command]
-pub fn todos_list() -> UiResult<Vec<todos::Todo>> {
-    Ok(todos::list(&ctx().db)?)
+pub async fn todos_list() -> UiResult<Vec<todos::Todo>> {
+    crate::todolist::list().await
 }
 
 fn validate_todo_title(t: &str) -> UiResult<()> {
@@ -395,50 +396,79 @@ fn todos_changed() {
 }
 
 #[tauri::command]
-pub fn todos_create(todo: todos::NewTodo) -> UiResult<todos::Todo> {
+pub async fn todos_create(todo: todos::NewTodo) -> UiResult<todos::Todo> {
     validate_todo_title(&todo.title)?;
     validate_iso(&todo.due_at)?;
-    let t = todos::create(&ctx().db, &todo)?;
+    let t = crate::todolist::create(&todo).await?;
     todos_changed();
     Ok(t)
 }
 
 #[tauri::command]
-pub fn todos_update(patch: todos::TodoPatch) -> UiResult<Option<todos::Todo>> {
+pub async fn todos_update(patch: todos::TodoPatch) -> UiResult<Option<todos::Todo>> {
     if let Some(t) = &patch.title {
         validate_todo_title(t)?;
     }
     if let Some(d) = &patch.due_at {
         validate_iso(d)?;
     }
-    let t = todos::update(&ctx().db, &patch)?;
+    let t = crate::todolist::update(&patch).await?;
     todos_changed();
     Ok(t)
 }
 
 #[tauri::command]
-pub fn todos_delete(id: i64) -> UiResult<()> {
-    todos::delete(&ctx().db, id)?;
+pub async fn todos_delete(id: i64) -> UiResult<()> {
+    crate::todolist::delete(id).await?;
     todos_changed();
     Ok(())
 }
 
 #[tauri::command]
-pub fn todos_reorder(ids: Vec<i64>) -> UiResult<()> {
-    todos::reorder(&ctx().db, &ids)?;
+pub async fn todos_reorder(ids: Vec<i64>) -> UiResult<()> {
+    crate::todolist::reorder(&ids).await?;
     todos_changed();
     Ok(())
 }
 
 #[tauri::command]
-pub fn todo_snooze(id: i64, minutes: Option<i64>) -> UiResult<()> {
+pub async fn todo_snooze(id: i64, minutes: Option<i64>) -> UiResult<()> {
     let m = minutes.unwrap_or(10).clamp(1, 24 * 60);
     let until = to_utc_text(chrono::Local::now() + chrono::Duration::minutes(m));
-    todos::snooze(&ctx().db, id, &until)?;
+    crate::todolist::snooze(id, &until).await?;
     todos_changed();
     Ok(())
 }
 
+// ---------- TaskHub ----------
+
+#[tauri::command]
+pub fn taskhub_status() -> UiResult<crate::taskhub::Status> {
+    Ok(crate::taskhub::status())
+}
+
+#[tauri::command]
+pub async fn taskhub_sign_in(
+    window: WebviewWindow,
+    url: String,
+    username: String,
+    password: String,
+) -> UiResult<crate::taskhub::Status> {
+    main_only(&window)?;
+    let s = crate::taskhub::sign_in(&url, &username, &password).await?;
+    todos_changed();
+    ctx().emit("settings-changed", json!({ "keys": ["taskhub"] }));
+    Ok(s)
+}
+
+#[tauri::command]
+pub fn taskhub_sign_out(window: WebviewWindow) -> UiResult<crate::taskhub::Status> {
+    main_only(&window)?;
+    let s = crate::taskhub::sign_out()?;
+    todos_changed();
+    ctx().emit("settings-changed", json!({ "keys": ["taskhub"] }));
+    Ok(s)
+}
 // ---------- Jobs ----------
 
 #[tauri::command]
@@ -1016,8 +1046,7 @@ pub fn open_external(target: String) -> UiResult<()> {
 
 #[tauri::command]
 pub fn island_layout(width: f64, height: f64) -> UiResult<()> {
-    let c = ctx();
-    c.island.layout(width, height, &c.settings().island.monitor);
+    ctx().island.layout(width, height);
     Ok(())
 }
 

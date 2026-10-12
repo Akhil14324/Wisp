@@ -84,6 +84,7 @@ export interface Settings {
   agent: { guard_list: GuardList; debug_screenshots: boolean; max_steps: number; max_minutes: number };
   app: { autostart: boolean; first_run_done: boolean; privacy_ack_at: string | null };
   wallpaper: { folder: string | null };
+  taskhub: { url: string; username: string | null; user_id: number | null };
 }
 
 export type Slot = "soul" | "loadout" | "skin" | "keys";
@@ -152,6 +153,15 @@ export interface Todo {
   created_at: string;
   completed_at: string | null;
   snoozed_until: string | null;
+  /** Due on a date with no time (TaskHub). */
+  all_day?: boolean;
+  source?: "local" | "taskhub";
+}
+
+export interface TaskHubStatus {
+  signed_in: boolean;
+  url: string;
+  username: string | null;
 }
 
 export type WhenKind = "once" | "daily" | "weekdays" | "weekly" | "monthly" | "cron";

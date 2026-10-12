@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chordLabel, describeWhen, duration, filterTodos, isoToLocalInput, localInputToIso, mmss, truncate, whenLabel } from "./format";
+import { chordLabel, describeWhen, duration, filterTodos, isoToLocalInput, localInputToIso, mmss, todoDueLabel, truncate, whenLabel } from "./format";
 import type { Todo } from "./types";
 
 const todo = (id: number, due: string | null, done = false): Todo => ({
@@ -27,6 +27,14 @@ describe("format", () => {
     expect(whenLabel(new Date(2026, 9, 12, 18, 0).toISOString(), now)).toBe("18:00");
     expect(whenLabel(new Date(2026, 9, 13, 9, 5).toISOString(), now)).toBe("Tomorrow 09:05");
     expect(whenLabel(null, now)).toBe("");
+  });
+
+  it("shows date-only to-dos without a time", () => {
+    const now = new Date(2026, 9, 12, 9, 0);
+    expect(todoDueLabel({ due_at: new Date(2026, 9, 12, 23, 59).toISOString(), all_day: true }, now)).toBe("Today");
+    expect(todoDueLabel({ due_at: new Date(2026, 9, 13, 23, 59).toISOString(), all_day: true }, now)).toBe("Tomorrow");
+    expect(todoDueLabel({ due_at: new Date(2026, 9, 12, 18, 0).toISOString(), all_day: false }, now)).toBe("18:00");
+    expect(todoDueLabel({ due_at: null }, now)).toBe("");
   });
 
   it("describes schedules", () => {

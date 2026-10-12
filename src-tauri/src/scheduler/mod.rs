@@ -122,7 +122,7 @@ impl Scheduler {
             }
 
             // To-do reminders use the same timer, not the model (FR-TODO-03).
-            for t in todos::pending_reminders(&c.db).unwrap_or_default() {
+            for t in crate::todolist::pending_reminders().await {
                 let when_s = t.snoozed_until.clone().or_else(|| t.due_at.clone());
                 let Some(when) = when_s.as_deref().and_then(parse_utc) else {
                     continue;
@@ -221,26 +221,30 @@ fn remind(t: &todos::Todo) {
         &t.title,
         &[("Done", "done"), ("Snooze 10 min", "snooze")],
         move |action| {
-            let c = ctx();
-            match action.as_deref() {
-                Some("done") => {
-                    let p = todos::TodoPatch {
-                        id,
-                        title: None,
-                        notes: None,
-                        due_at: None,
-                        done: Some(true),
-                    };
-                    let _ = todos::update(&c.db, &p);
+            // Toast callbacks are synchronous; TaskHub calls are async.
+            let action = action.clone();
+            tauri::async_runtime::spawn(async move {
+                let c = ctx();
+                match action.as_deref() {
+                    Some("done") => {
+                        let p = todos::TodoPatch {
+                            id,
+                            title: None,
+                            notes: None,
+                            due_at: None,
+                            done: Some(true),
+                        };
+                        let _ = crate::todolist::update(&p).await;
+                    }
+                    Some("snooze") => {
+                        let until = to_utc_text(Local::now() + chrono::Duration::minutes(10));
+                        let _ = crate::todolist::snooze(id, &until).await;
+                        c.scheduler.wake();
+                    }
+                    _ => {}
                 }
-                Some("snooze") => {
-                    let until = to_utc_text(Local::now() + chrono::Duration::minutes(10));
-                    let _ = todos::snooze(&c.db, id, &until);
-                    c.scheduler.wake();
-                }
-                _ => {}
-            }
-            c.emit("todos-changed", json!({}));
+                c.emit("todos-changed", json!({}));
+            });
         },
     );
 }

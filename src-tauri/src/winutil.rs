@@ -138,6 +138,21 @@ pub fn set_no_activate(hwnd: isize, on: bool) {
     }
 }
 
+/// Window rectangle in physical pixels (left, top, right, bottom), if visible.
+pub fn window_rect(hwnd: isize) -> Option<(i32, i32, i32, i32)> {
+    use windows::Win32::Foundation::RECT;
+    use windows::Win32::UI::WindowsAndMessaging::{GetWindowRect, IsWindowVisible};
+    unsafe {
+        let h = HWND(hwnd as *mut _);
+        if !IsWindowVisible(h).as_bool() {
+            return None;
+        }
+        let mut r = RECT::default();
+        GetWindowRect(h, &mut r).ok()?;
+        Some((r.left, r.top, r.right, r.bottom))
+    }
+}
+
 /// Shows a topmost window without taking focus from the app in front.
 pub fn show_no_activate(hwnd: isize) {
     use windows::Win32::UI::WindowsAndMessaging::{

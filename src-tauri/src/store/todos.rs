@@ -16,6 +16,16 @@ pub struct Todo {
     pub created_at: String,
     pub completed_at: Option<String>,
     pub snoozed_until: Option<String>,
+    /// Due on a date with no time (TaskHub); never reminded at a clock time.
+    #[serde(default)]
+    pub all_day: bool,
+    /// "local" or "taskhub".
+    #[serde(default = "local_source")]
+    pub source: String,
+}
+
+fn local_source() -> String {
+    "local".into()
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -62,6 +72,8 @@ fn row(r: &Row) -> rusqlite::Result<Todo> {
         created_at: r.get(6)?,
         completed_at: r.get(7)?,
         snoozed_until: r.get(8)?,
+        all_day: false,
+        source: local_source(),
     })
 }
 

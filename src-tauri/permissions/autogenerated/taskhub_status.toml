@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-taskhub-status"
+description = "Enables the taskhub_status command without any pre-configured scope."
+commands.allow = ["taskhub_status"]
+
+[[permission]]
+identifier = "deny-taskhub-status"
+description = "Denies the taskhub_status command without any pre-configured scope."
+commands.deny = ["taskhub_status"]

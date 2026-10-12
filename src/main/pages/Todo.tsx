@@ -2,7 +2,7 @@ import { GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { useReload } from "../../shared/events";
 import { errorMessage, ipc } from "../../shared/ipc";
-import { filterTodos, isoToLocalInput, localInputToIso, type TodoFilter, whenLabel } from "../../shared/format";
+import { filterTodos, isoToLocalInput, localInputToIso, type TodoFilter, todoDueLabel } from "../../shared/format";
 import type { Todo } from "../../shared/types";
 import { Button, Empty, ErrorText, IconButton, Input } from "../../shared/ui";
 import { PageTitle } from "../App";
@@ -22,7 +22,11 @@ export function TodoPage() {
   const [err, setErr] = useState("");
   const [editing, setEditing] = useState<number | null>(null);
   const dragId = useRef<number | null>(null);
-  const load = () => ipc.todosList().then(setTodos).catch(() => {});
+  const [synced, setSynced] = useState(false);
+  const load = () => {
+    ipc.todosList().then(setTodos).catch((e) => setErr(errorMessage(e)));
+    ipc.taskhubStatus().then((s) => setSynced(s.signed_in)).catch(() => {});
+  };
   useReload(["todos-changed"], load);
 
   const visible = filterTodos(todos, filter);
@@ -54,7 +58,14 @@ export function TodoPage() {
 
   return (
     <>
-      <PageTitle title="To-do" sub='Say "add call Mom to my to-do list" or "add gym at 6 PM" in command mode.' />
+      <PageTitle
+        title="To-do"
+        sub={
+          todos.some((t) => t.source === "taskhub") || synced
+            ? "Synced with TaskHub. Say \"add gym at 6 PM\" in command mode to add one."
+            : 'Say "add call Mom to my to-do list" or "add gym at 6 PM" in command mode.'
+        }
+      />
       <div className="flex gap-2 mb-4">
         <Input aria-label="New to-do" className="flex-1" placeholder="Add a to-do" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} />
         <Input aria-label="Due date and time" type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} />
@@ -100,7 +111,7 @@ export function TodoPage() {
                 onChange={() => ipc.todosUpdate({ id: t.id, done: !t.done })}
               />
               <span className={`flex-1 min-w-0 truncate ${t.done ? "line-through text-[var(--muted)]" : ""}`}>{t.title}</span>
-              {t.due_at && <span className={`text-[12px] ${!t.done && new Date(t.due_at) < new Date() ? "text-[var(--danger)]" : "text-[var(--muted)]"}`}>{whenLabel(t.due_at)}</span>}
+              {t.due_at && <span className={`text-[12px] ${!t.done && new Date(t.due_at) < new Date() ? "text-[var(--danger)]" : "text-[var(--muted)]"}`}>{todoDueLabel(t)}</span>}
               <IconButton label={`Edit ${t.title}`} onClick={() => setEditing(t.id)}>
                 <Pencil size={14} />
               </IconButton>

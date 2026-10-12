@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useReload } from "../../shared/events";
 import { chordLabel } from "../../shared/format";
 import { errorMessage, ipc } from "../../shared/ipc";
-import type { AppEntry, ModelsList, MonitorInfo, Pinned } from "../../shared/types";
+import type { AppEntry, ModelsList, MonitorInfo, Pinned, TaskHubStatus } from "../../shared/types";
 import { Badge, Button, Dialog, ErrorText, IconButton, Input, Row, Section, Select, Toggle } from "../../shared/ui";
 import { PageTitle } from "../App";
 import { useMain } from "../store";
@@ -73,6 +73,7 @@ function General() {
   if (!settings) return null;
   return (
     <>
+      <TaskHubSection />
       <Section title="Startup">
         <Row label="Start with Windows" hint="Wisp starts in the tray when you sign in.">
           <Toggle label="Start with Windows" checked={settings.app.autostart} onChange={(v) => set("app.autostart", v)} />
@@ -115,6 +116,74 @@ function General() {
         </Row>
       </Section>
     </>
+  );
+}
+
+/** TaskHub sign-in: when signed in, Wisp's to-dos are your TaskHub to-dos. */
+function TaskHubSection() {
+  const [st, setSt] = useState<TaskHubStatus | null>(null);
+  const [url, setUrl] = useState("");
+  const [user, setUser] = useState("");
+  const [pw, setPw] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    ipc.taskhubStatus().then((s) => {
+      setSt(s);
+      setUrl(s.url);
+      setUser(s.username ?? "");
+    }).catch(() => {});
+  }, []);
+  if (!st) return null;
+  const signIn = async () => {
+    setBusy(true);
+    setErr("");
+    try {
+      const s = await ipc.taskhubSignIn(url.trim(), user.trim(), pw);
+      setSt(s);
+      setPw("");
+    } catch (e) {
+      setErr(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Section title="TaskHub">
+      {st.signed_in ? (
+        <Row label={<>Signed in as <b>{st.username}</b></>} hint="Your to-dos, reminders and voice to-dos now use your TaskHub list: personal to-dos and business tasks assigned to you.">
+          <Button
+            variant="danger"
+            onClick={async () => {
+              setSt(await ipc.taskhubSignOut());
+            }}
+          >
+            Sign out
+          </Button>
+        </Row>
+      ) : (
+        <div className="py-3 flex flex-col gap-2">
+          <p className="text-[12px] text-[var(--muted)]">Sign in with your TaskHub account to use your TaskHub to-dos in Wisp. Your password is kept in Windows Credential Manager.</p>
+          <Input aria-label="TaskHub server" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…/api" />
+          <div className="flex gap-2">
+            <Input aria-label="TaskHub username" className="flex-1" placeholder="Username" autoComplete="off" value={user} onChange={(e) => setUser(e.target.value)} />
+            <Input
+              aria-label="TaskHub password"
+              className="flex-1"
+              type="password"
+              placeholder="Password"
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && user && pw && signIn()}
+            />
+            <Button variant="primary" busy={busy} disabled={!user.trim() || !pw} onClick={signIn}>
+              Sign in
+            </Button>
+          </div>
+          <ErrorText>{err}</ErrorText>
+        </div>
+      )}
+    </Section>
   );
 }
 

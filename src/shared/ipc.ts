@@ -18,6 +18,7 @@ import type {
   Preset,
   Settings,
   Slot,
+  TaskHubStatus,
   Stroke,
   Todo,
   UiError,
@@ -66,6 +67,11 @@ export const ipc = {
   todosDelete: (id: number) => call<void>("todos_delete", { id }),
   todosReorder: (ids: number[]) => call<void>("todos_reorder", { ids }),
   todoSnooze: (id: number, minutes = 10) => call<void>("todo_snooze", { id, minutes }),
+
+  taskhubStatus: () => call<TaskHubStatus>("taskhub_status"),
+  taskhubSignIn: (url: string, username: string, password: string) =>
+    call<TaskHubStatus>("taskhub_sign_in", { url, username, password }),
+  taskhubSignOut: () => call<TaskHubStatus>("taskhub_sign_out"),
 
   jobsList: () => call<Job[]>("jobs_list"),
   jobsCreate: (job: { name: string; command: string; when: When; allow_computer_use: boolean; enabled?: boolean }) =>

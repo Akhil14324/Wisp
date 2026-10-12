@@ -2,7 +2,7 @@ import { Check, ExternalLink, Music2, Pause, Play, SkipBack, SkipForward } from 
 import { useEffect, useState } from "react";
 import { useEvent, useReload } from "../shared/events";
 import { errorMessage, ipc } from "../shared/ipc";
-import { filterTodos, mmss, truncate, whenLabel } from "../shared/format";
+import { filterTodos, mmss, todoDueLabel, truncate, whenLabel } from "../shared/format";
 import type { ClipItem, Job, MediaInfo, Pinned, Preset, Settings, Todo, Wallpaper } from "../shared/types";
 import { TABS, useIsland } from "./store";
 
@@ -10,7 +10,7 @@ import { TABS, useIsland } from "./store";
 export function Panel() {
   const { tab, setTab } = useIsland();
   return (
-    <div className="island-shell island-panel island-enter flex flex-col" style={{ height: 300 }}>
+    <div className="flex flex-col" style={{ height: 300 }}>
       <div role="tablist" aria-label="Island panels" className="flex gap-0.5 px-2 pt-2 pb-1.5 text-[12px] overflow-hidden">
         {TABS.map((t) => (
           <button key={t} role="tab" type="button" aria-selected={tab === t} className="island-tab" onClick={() => setTab(t)}>
@@ -130,7 +130,7 @@ function PlansTab() {
             onChange={() => ipc.todosUpdate({ id: t.id, done: !t.done })}
           />
           <span className="truncate flex-1">{t.title}</span>
-          {t.due_at && <span className="muted text-[11px] shrink-0">{whenLabel(t.due_at)}</span>}
+          {t.due_at && <span className="muted text-[11px] shrink-0">{todoDueLabel(t)}</span>}
         </label>
       ))}
       <div className="font-semibold px-1 mt-3 mb-1">Next up</div>

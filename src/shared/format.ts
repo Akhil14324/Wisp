@@ -38,6 +38,18 @@ export function whenLabel(iso: string | null, now: Date = new Date()): string {
   return `${d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })} ${hm}`;
 }
 
+/** Due label for a to-do: date-only items (TaskHub) show no clock time. */
+export function todoDueLabel(t: Pick<Todo, "due_at" | "all_day">, now: Date = new Date()): string {
+  if (!t.due_at) return "";
+  if (!t.all_day) return whenLabel(t.due_at, now);
+  const d = new Date(t.due_at);
+  if (sameDay(d, now)) return "Today";
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  if (sameDay(d, tomorrow)) return "Tomorrow";
+  return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+}
+
 /** "3 min ago", "2 h ago", or a date. */
 export function ago(iso: string, now: Date = new Date()): string {
   const d = new Date(iso);

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-taskhub-sign-in"
+description = "Enables the taskhub_sign_in command without any pre-configured scope."
+commands.allow = ["taskhub_sign_in"]
+
+[[permission]]
+identifier = "deny-taskhub-sign-in"
+description = "Denies the taskhub_sign_in command without any pre-configured scope."
+commands.deny = ["taskhub_sign_in"]

@@ -2,7 +2,7 @@ import { Bot, KeyRound, Play } from "lucide-react";
 import { useState } from "react";
 import { useReload } from "../../shared/events";
 import { errorMessage, ipc } from "../../shared/ipc";
-import { ago, filterTodos, truncate, whenLabel } from "../../shared/format";
+import { ago, filterTodos, todoDueLabel, truncate, whenLabel } from "../../shared/format";
 import type { CommandEntry, Job, Todo } from "../../shared/types";
 import { Badge, Button, Empty, Input, Section } from "../../shared/ui";
 import { PageTitle } from "../App";
@@ -39,7 +39,7 @@ export function HomePage() {
               <label key={t.id} className="flex items-center gap-2.5 py-2 border-b border-[var(--border)] last:border-b-0 cursor-pointer">
                 <input type="checkbox" className="h-4 w-4 accent-[var(--accent)]" checked={t.done} onChange={() => ipc.todosUpdate({ id: t.id, done: !t.done })} />
                 <span className="flex-1 truncate">{t.title}</span>
-                {t.due_at && <span className="text-[12px] text-[var(--muted)]">{whenLabel(t.due_at)}</span>}
+                {t.due_at && <span className="text-[12px] text-[var(--muted)]">{todoDueLabel(t)}</span>}
               </label>
             ))
           )}
@@ -92,9 +92,15 @@ export function HomePage() {
   );
 }
 
-/** FR-CU-01: Run task box. */
+/**
+ * Ask Wisp. By default this is the normal command path: the model uses direct
+ * tools (open apps, press keys, type, search, to-dos), which is fast and never
+ * touches the mouse. Ticking "Use mouse and keyboard" runs it as a Computer Use
+ * task instead (FR-CU-01).
+ */
 function RunTask() {
   const [goal, setGoal] = useState("");
+  const [useScreen, setUseScreen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
   const run = async () => {
@@ -102,7 +108,7 @@ function RunTask() {
     setBusy(true);
     setResult(null);
     try {
-      const r = await ipc.runAgentTask(goal.trim());
+      const r = useScreen ? await ipc.runAgentTask(goal.trim()) : await ipc.runTextCommand(goal.trim());
       setResult(r);
       if (r.ok) setGoal("");
     } catch (e) {
@@ -114,14 +120,14 @@ function RunTask() {
   return (
     <div className="mb-6 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--panel)] p-4">
       <div className="flex items-center gap-2 mb-2.5 text-[13px] font-medium">
-        <Bot size={16} className="text-[var(--accent)]" /> Run a task
-        <span className="text-[var(--muted)] font-normal">Wisp operates your PC with mouse and keyboard. Esc ×3 stops it.</span>
+        <Bot size={16} className="text-[var(--accent)]" /> Ask Wisp
+        <span className="text-[var(--muted)] font-normal">Same as command mode, typed.</span>
       </div>
       <div className="flex gap-2">
         <Input
-          aria-label="Task goal"
+          aria-label="What should Wisp do?"
           className="flex-1"
-          placeholder="Open Notepad and type hello world"
+          placeholder="Open Notepad and press Enter"
           value={goal}
           maxLength={1000}
           onChange={(e) => setGoal(e.target.value)}
@@ -136,6 +142,10 @@ function RunTask() {
           </Button>
         )}
       </div>
+      <label className="flex items-center gap-2 mt-2.5 text-[12px] text-[var(--muted)] cursor-pointer w-fit">
+        <input type="checkbox" className="h-3.5 w-3.5 accent-[var(--accent)]" checked={useScreen} onChange={(e) => setUseScreen(e.target.checked)} />
+        Use mouse and keyboard (Computer Use: slower, Esc ×3 stops it)
+      </label>
       {result && <div className={`mt-2 text-[13px] ${result.ok ? "text-[var(--ok)]" : "text-[var(--danger)]"}`}>{result.text}</div>}
     </div>
   );

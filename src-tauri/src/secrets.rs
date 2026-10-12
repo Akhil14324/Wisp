@@ -75,6 +75,37 @@ pub fn delete() -> anyhow::Result<()> {
     }
 }
 
+/// Other Wisp credentials (TaskHub sign-in), each its own Credential Manager
+/// entry `Wisp/<name>`. Values never reach logs or the front end.
+pub mod named {
+    use super::{redact, ApiKey};
+
+    fn entry(name: &str) -> keyring::Result<keyring::Entry> {
+        keyring::Entry::new_with_target(&format!("Wisp/{name}"), "Wisp", name)
+    }
+
+    pub fn get(name: &str) -> Option<ApiKey> {
+        match entry(name).and_then(|e| e.get_password()) {
+            Ok(v) if !v.is_empty() => Some(ApiKey::new(v)),
+            Ok(_) | Err(keyring::Error::NoEntry) => None,
+            Err(e) => {
+                tracing::warn!(error = %redact(&e), name, "credential read failed");
+                None
+            }
+        }
+    }
+
+    pub fn set(name: &str, value: &str) -> anyhow::Result<()> {
+        entry(name)
+            .and_then(|e| e.set_password(value))
+            .map_err(|e| anyhow::anyhow!("credential write failed: {}", redact(&e)))
+    }
+
+    pub fn delete(name: &str) {
+        let _ = entry(name).and_then(|e| e.delete_credential());
+    }
+}
+
 /// keyring errors never contain the secret, but keep only the variant name to be safe.
 fn redact(e: &keyring::Error) -> &'static str {
     match e {

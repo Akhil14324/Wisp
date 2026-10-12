@@ -264,7 +264,8 @@ pub async fn run_task(
     let max_steps = settings.agent.max_steps.clamp(1, 40) as usize;
 
     c.agent.cu_running.store(true, Ordering::SeqCst);
-    crate::hotkeys::set_report_physical(true);
+    // Your own mouse and keyboard never pause a task (user decision, replaces
+    // FR-CU-14); only Esc x3 or Stop ends it. Takeover reporting stays off.
     c.island.set_controlling(true);
     let _cleanup = Cleanup;
 
