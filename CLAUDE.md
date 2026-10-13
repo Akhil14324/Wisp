@@ -38,6 +38,10 @@ The UI never holds the API key and never calls Gemini. It invokes Tauri commands
 - **Scheduler** (`scheduler/mod.rs`): one loop computes due jobs, to-do reminders and the 03:00 retention pass, and wakes at least every 60 s. Runs go through a bounded queue (5) to a single worker that calls `agent::run_command` unattended.
 - **Windows**: `island` (pill/panel, `WS_EX_NOACTIVATE`; the front end asks Rust to resize via `island_layout`), `overlay` (pre-created, drawing or click-through rings), `card` (Circle to Ask answer), `main` (settings, history, wizard). Island, overlay and card are excluded from capture. Each window has its own Vite entry under `src/<window>/` and its own capability file in `src-tauri/capabilities/`.
 
+## Vercel / Railway configs
+
+`vercel.json` and `railway.json` only deploy the static front end (`vite build` into `dist/`) as a UI preview; there is no Rust core there, so Tauri calls fail by design. Wisp must never contact those hosts (NFR-14). See `docs/DEPLOYMENT.md`. Don't treat them as a web backend.
+
 ## Adding a Tauri command
 
 The command must be added in **four places**, or calls fail with a permission error:
